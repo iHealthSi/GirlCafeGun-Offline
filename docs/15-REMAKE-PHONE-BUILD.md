@@ -1,6 +1,6 @@
 # 15 — Phone build on the Remake base
 
-Date: 2026-11-14. Card: gcg2#34. State: installed on the Galaxy S24+: our repacked APK (English intro, controller axes) and release `gcg2-0.1.3-8`. Release `gcg2-0.1.3-9` (theme songs, `update/` bundles) is built and copied to the phone, not applied yet.
+Date: 2026-11-14. Card: gcg2#34. State: installed on the Galaxy S24+: our repacked APK (English intro, controller axes) and release `gcg2-0.1.3-9`.
 
 Since 2026-11-14 the project base is [GirlCafeGun-Remake](https://github.com/zirenmidori/GirlCafeGun-Remake).
 This page says how the phone gets "Remake plus our changes" and what was proved at each step.
@@ -23,8 +23,8 @@ A full rebuild from source is not possible: Remake's build pins a client APK and
 What the repacked APK costs: the publisher's APK updates do not install over it (another signer). A new official
 APK must go through `tools\remake\repack_apk.py` first. Our own APK changes install with `adb install -r`.
 
-What is installed as data (release `gcg2-0.1.3-8`, one package on a fresh `0.1.3`; releases 1 to 7 were the
-steps on the publisher's APK, 2 to 6 of them diagnosis):
+What is installed as data (release `gcg2-0.1.3-8`, one package on a fresh `0.1.3`, plus release 9, which adds
+the recovered bundles; releases 1 to 7 were the steps on the publisher's APK, 2 to 6 of them diagnosis):
 
 | Part | From | Content |
 |---|---|---|
@@ -130,8 +130,8 @@ python tools\remake\apply_update_on_phone.py --package-name <new id>.gcgupdate -
 ```
 
 Rules of the update chain:
-- A package applies only on the release it names as its base. The installed id is now `gcg2-0.1.3-8`; the next
-  package needs `--base-manifest dist\remake-phone\manifest-gcg2-0.1.3-8.json`. `dist\` is not in git: keep that file.
+- A package applies only on the release it names as its base. The installed id is now `gcg2-0.1.3-9`; the next
+  package needs `--base-manifest dist\remake-phone\manifest-gcg2-0.1.3-9.json`. `dist\` is not in git: keep that file.
 - The game rewrites `files/version.data` at its first start after an install or update (the asset routes
   change, the bundle records do not). So always build on the copy pulled from the phone, not on the copy of the
   release manifest. The pack stage checks that the copy describes the installed release.
@@ -184,6 +184,10 @@ The save started new (the owner asked for a fresh save).
 
 ## What was seen on the phone (Galaxy S24+, 2026-11-14)
 
+- Release `gcg2-0.1.3-9` on the APK with the controller axes (23:40): the game starts and reaches the title; 13
+  bundles are in `files/update/`, both theme songs in `files/wwisedata/` (the hash of the English one equals our
+  file); five starts logged sky, shards, sky, sky, snow; no error line names `update/` or a theme song. Whether
+  the client uses the `update/` bundles was not seen. The controller was not tried with a pad.
 - On our APK: the intro shows "bilibili", then the Seasun logo without characters, then the game logo. Eight
   starts of release `gcg2-0.1.3-8` logged snow 4, shards 2, sky 1, hall 1, all with the English logo.
 
