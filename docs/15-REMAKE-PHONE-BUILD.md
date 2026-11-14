@@ -1,6 +1,6 @@
 # 15 — Phone build on the Remake base
 
-Date: 2026-11-14. Card: gcg2#34. State: installed on the Galaxy S24+: our repacked APK (English intro) and release `gcg2-0.1.3-8`.
+Date: 2026-11-14. Card: gcg2#34. State: installed on the Galaxy S24+: our repacked APK (English intro, controller axes) and release `gcg2-0.1.3-8`. Release `gcg2-0.1.3-9` (theme songs, `update/` bundles) is built and copied to the phone, not applied yet.
 
 Since 2026-11-14 the project base is [GirlCafeGun-Remake](https://github.com/zirenmidori/GirlCafeGun-Remake).
 This page says how the phone gets "Remake plus our changes" and what was proved at each step.
@@ -11,7 +11,7 @@ Docs 01 to 14 describe the older C# build and do not apply to this route.
 Two layers:
 
 1. **The APK**: the published Remake 0.1.3 APK with one entry changed (`assets/bin/Data/data.unity3d`: three intro
-   pictures) and **our signature** (`CN=GCG2-Offline community update, O=iHealthSi`, cert sha256 `b2ef7cc0...`).
+   pictures and 28 raw joystick axes in the InputManager) and **our signature** (`CN=GCG2-Offline community update, O=iHealthSi`, cert sha256 `b2ef7cc0...`).
    The owner chose this on 2026-11-14 to get an English intro. Until then the phone ran the publisher's APK unchanged.
 2. **Our signed update packages** (`.gcgupdate`) for everything in the game data, the way Remake's
    `docs/update-format.md` describes under "Locally signed user-created data updates". The app shows the
@@ -33,9 +33,29 @@ steps on the publisher's APK, 2 to 6 of them diagnosis):
 | `version.data` | derived | size and CRC of the changed bundles; every other record byte for byte |
 | server payload | Remake pull request 1 | daily save backup, broken-save protection |
 
-Not on the phone: pull request 3 (the story editor is a PC tool) and the InputManager axes of the controller
-work (they need an APK change). Without them the right stick and the d-pad depend on the pad; see Remake
-`docs/controller.md`.
+Not on the phone: pull request 3 (the story editor is a PC tool).
+
+## What came over from the C# build, and what did not (2026-11-14)
+
+| Fix of the C# build | On the Remake phone build |
+|---|---|
+| Controller layer | in (pull request 2). The raw axes `gcgpad_a1..28` are in our APK since the second repack; not tried with a pad |
+| Four title screens, English title art, English intro | in |
+| Daily save backup | in (pull request 1) |
+| Story translations | not ours, and not needed: Remake's text table has no value with a Chinese or Japanese word; chapter 16 is the official text |
+| Uncensor switch (`love.u`) | not needed: Remake's server sends Live2D level 3 and the censor flag off at login (`server/docs/modules/16-live2d-state.md`), as our C# server does. The `love.u` marker only acts when the client language is English, which it is not here. Not checked in play |
+| 16 bundles recovered from EN 1.0.7 | in release `gcg2-0.1.3-9`: the two theme songs (Remake's index names them with exactly our size and CRC, its data lacks the files) and the 13 `update/` bundles (its index does not name them: effect on this client unknown; one package with `--remove` takes them out). `charact/player.u` exists there in its own version |
+| The 427 bundles our data lacks | Remake's data lacks the same ones; it ships voice as loose `AutoAudio` files. Story voice was not listened for |
+| Free store packs offline | left out on the owner's decision (Remake grants only the daily gift and one month card) |
+| GM panel fixes | left out on the owner's decision (Remake removes the GM panel) |
+| Stamina recovery over time | left out on the owner's decision; ported and parked on the Remake branch `vigour-recovery-parked` |
+| Local Notice and server-error pages | not ported yet |
+| Event page rewards | not ported yet (Remake: the eight-day sign-up only) |
+| Gacha fixes | not needed: Remake's design prevents those bugs |
+
+Published on 2026-11-14: Remake fork `iHealthSi/GirlCafeGun-Remake`: the four pull request branches and the combined
+branch `gcg2-phone-build` (what the phone build is made from). C# fork `iHealthSi/GirlCafeGun-Offline`: branch
+`gcg2-all-fixes`, one commit with the state of the local work branch.
 
 ## Why the title was Chinese, and what cannot be changed
 
@@ -83,8 +103,9 @@ All commands run from the repo root. `PY310` is the venv Python, `APK` the relea
 # 0a. the APK with the English intro, signed with our key (only when the APK must change)
 PY310 tools\remake\repack_apk.py intro --apk APK --en-apk gcg_offline_fixed.apk --en-atlas assets\Bundles\ui_tx\ui_login.u --remake WT --out dist\remake-phone\apk\data.unity3d
 python tools\remake\repack_apk.py apk --apk APK --data dist\remake-phone\apk\data.unity3d --signing-dir .local\remake-signing --build-tools C:\android-build\bt\android-15 --java-home C:\android-build\jdk\<jdk> --out dist\remake-phone\apk\GCG-Offline-v0.1.3-gcg2.apk
+#     controller axes: PY310 tools\remake\repack_apk.py axes --data <data.unity3d> --remake WT --out <data-axes.unity3d>, then the apk stage with that file
 # 0b. the phone: install it (the owner accepts the Play Protect prompt). Over our own APK: adb install -r.
-C:\platform-tools\adb.exe install dist\remake-phone\apk\GCG-Offline-v0.1.3-gcg2.apk
+C:\platform-tools\adb.exe install -r dist\remake-phone\apk\GCG-Offline-v0.1.3-gcg2-b.apk
 
 # 1. lua.u: the released script bundle plus our recipes, then the mock tests on the result
 PY310 tools\remake\build_phone_update.py lua --apk APK --client-dir WT\release\client --hooks-only --english-title --tests --out dist\remake-phone\lua.u
@@ -135,6 +156,11 @@ Rules of the update chain:
 - **Login atlas.** Three rectangles painted (logo 695 x 292, tap text 210 x 41, log out 100 x 100); the tool
   asserts that no pixel outside them changed and that the bundle reads back with the same 27 sprites and
   rectangles. The texture is stored as RGBA32. sha256 `09e87e83...`, 382,391 bytes.
+- **Controller axes.** `repack_apk.py axes` adds 28 InputManager entries. Only the file `globalgamemanagers`
+  inside `data.unity3d` is written again and only the InputManager object differs (asserted object by object).
+  The C# build's `apk-build/patch_inputmanager.py` is not used here: it saves the whole container, which rewrote
+  seven scene files of this APK. APK `GCG-Offline-v0.1.3-gcg2-b.apk`: sha256 `853427c1...`, installed 2026-11-14 22:18.
+- **Combined server.** The Remake test suite on the combined branch: 435 passed, 2 skipped.
 - **Not possible:** a full run of Remake's `patch_lua.py` on `assets/lua.u.orig` of the release APK. That file is
   not the input their build pins: `patch_selectors` stops on its first anchor. So the release cannot be
   reproduced from the APK alone, and the hooks-only way is the one we use.
