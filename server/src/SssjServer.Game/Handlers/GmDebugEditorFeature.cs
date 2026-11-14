@@ -145,14 +145,26 @@ public sealed class GmDebugEditorFeature : IGameFeature
             {
                 if (args.Count >= 3)
                 {
-                    uint mapId = MapList.MapId(args[0], args[1], args[2]);
-                    int cur = player.GetLevelStar(mapId);
-                    int composed = MapList.PassCount(cur) > 0
-                        ? MapList.Compose(MapList.StarMask, MapList.PassCount(cur))
-                        : MapList.Compose(MapList.StarMask, 1);
-                    player.Levels[mapId] = composed;
-                    GameNotify.PushChapter(session, mapId, composed);
-                    return $"{args[0]}-{args[1]}(d{args[2]}) marked as 3-star cleared";
+                    // The panel button is "Unlock up to a certain stage" (ui.UI_GM.UnLockToOne, UI_GM.lua:587):
+                    // every main-story stage of this difficulty up to and including ch-idx, so the next one opens.
+                    // Chapter 100 and above are event maps and stay out.
+                    int ch = args[0], idx = args[1], diff = args[2];
+                    var upTo = _ctx.Chapters.All
+                        .Where(l => l.Diff == diff && l.Chapter < 100 && (l.Chapter < ch || (l.Chapter == ch && l.Index <= idx)))
+                        .Select(l => l.MapId).Append(MapList.MapId(ch, idx, diff)).Distinct().ToList();
+                    int changed = 0;
+                    foreach (uint mapId in upTo)
+                    {
+                        int cur = player.GetLevelStar(mapId);
+                        int composed = MapList.PassCount(cur) > 0
+                            ? MapList.Compose(MapList.StarMask, MapList.PassCount(cur))
+                            : MapList.Compose(MapList.StarMask, 1);
+                        if (composed == cur) continue;
+                        player.Levels[mapId] = composed;
+                        GameNotify.PushChapter(session, mapId, composed);
+                        changed++;
+                    }
+                    return $"Stages up to {ch}-{idx} (difficulty {diff}) marked as 3-star cleared: {changed} changed";
                 }
                 return Push(session, player, gm.ApplyLevels(player), "All stages 3-star");
             }

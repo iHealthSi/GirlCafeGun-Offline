@@ -175,6 +175,8 @@ the same permission. To silence the SDKs, each one needs a stub in the dex. Not 
 
 ## 6. Open items (board cards)
 
+State on 2026-11-14: all seven cards are open (gcg2#22 in `doing`, the others in `todo`).
+
 1. Phone test on screen: Notice window, and the server-error window (`LoadHTMLString` path) — gcg2#22.
 2. Real notice texts: none recovered; retry the Wayback search for the English notice API — gcg2#23.
 3. Rate window with a dead store link — gcg2#24.

@@ -11,7 +11,7 @@ machine) and watching its logs.
 - `SssjServer.Game` — all the game logic and the config-table loaders.
 - `SssjServer.Protocol` — the wire protocol types.
 
-It reads the game config from a **setting directory** (`server/setting/`, the EN v1.0.9 tables) and
+It reads the game config from a **setting directory** (`server/setting/`, the EN v1.0.9 tables; the active set is chosen by `assets/device_assets/tableset.txt`, see [12-LATE-CONTENT.md](12-LATE-CONTENT.md)) and
 writes player saves to a **data directory** you choose.
 
 ## Prerequisites
@@ -21,8 +21,9 @@ writes player saves to a **data directory** you choose.
 ## Build
 ```bash
 cd server
-dotnet build -c Release SssjServer.sln
+dotnet build -c Release src/SssjServer.App/SssjServer.App.csproj
 ```
+Do not build `SssjServer.sln`: it lists test projects that are not shipped, and the build fails.
 To run it on a different machine as a self-contained binary (no .NET needed there), publish for that
 machine's runtime, e.g. Windows:
 ```bash
@@ -79,15 +80,18 @@ instead you have to point it at `http://127.0.0.1:9080` and take the offline-acc
    adb reverse tcp:9080 tcp:9080
    adb reverse tcp:9600 tcp:9600
    ```
-   then run the memory-patch launcher (`client/launch_gcg.ps1` in the full project) which flips the
+   then run the memory-patch launcher (`client/launch_gcg.ps1`; it is not in this repository) which flips the
    client's `disablegm` flag, sets its platform to `selftest`, and rewrites the server URL to
    `http://127.0.0.1:09080`. That launcher is device-specific (it uses fixed il2cpp offsets for this
    build) — it is the same logic the APK's shim performs in-process; see
-   [03-BUILD-APK.md](03-BUILD-APK.md) and the project's `client/` folder.
+   [03-BUILD-APK.md](03-BUILD-APK.md). The `client/` folder is not in this repository.
 
 For most people: run the server as above to read logs / test changes, and use the APK to actually play.
 
 ## About the config in `setting/`
 These are the EN v1.0.9 tables (items, cards, gacha pools, chapters, events, …). The server reads them
 read-only. Replacing them with a different game version's tables will change what the server serves;
-the included tables match the client version in the APK (10009 / v1.0.9).
+the tables of the build5 set match the client version 10009 / v1.0.9. The late set (build 179) is described in [12-LATE-CONTENT.md](12-LATE-CONTENT.md).
+
+A second set from the last EN hot update (chapters 13-16, later banners) can be built and switched in with
+`tools/tableset.py`; see [12-LATE-CONTENT.md](12-LATE-CONTENT.md).

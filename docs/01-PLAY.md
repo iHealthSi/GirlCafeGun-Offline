@@ -1,7 +1,7 @@
 # 01 — Play offline
 
 The `gcg_offline.apk` has the server baked in. You only need to install it, give it the game's asset
-pack (OBB), and launch.
+pack (OBB), and launch. The emulator route (`INSTALL.bat`, `scripts/install.ps1`) uses `gcg_offline.apk`. The phone package route (`tools/package.ps1`, `HOW-TO-INSTALL.txt`) uses `GirlCafeGun.apk`, built from the base APK `gcg_offline_fixed.apk`.
 
 ## Requirements
 - An **arm64** Android emulator or device. [MuMu Player 12](https://www.mumuplayer.com/) is what this
@@ -16,17 +16,17 @@ pack (OBB), and launch.
   (nothing leaves the device). The client's offline-blocking "check your network" gate is patched out,
   so New Account works even with Wi-Fi, data, and everything off.
 - `adb` (Android platform-tools) on your PC, and **PowerShell** (for the asset sync script).
-- The assets in `../assets/` (included): the OBB, the bundle repository, `version.data`, and
-  `sync_device_assets.ps1`. (Paths below assume you run from `GCG2-Offline/`.)
+- The assets from the asset pack you hold, placed in `../assets/`: the OBB, the bundle repository, `version.data`, and
+  `sync_device_assets.ps1`. (Paths below assume you run from `GirlCafeGun-Offline/`.)
 
 ## The assets, briefly
 Offline play needs two things on the device beyond the APK:
 1. the **OBB** (`assets/obb/…obb`, ~1.7 GB) → goes in the app's obb folder (step 3),
 2. a set of newer **bundles** the current content needs beyond the OBB (listed in
-   `assets/device_assets/added_bundles.txt`, ~557 MB) plus the merged `version.data` → pushed into the
+   `assets/device_assets/added_bundles.minimal.txt`, ~380 bundles; the full list `added_bundles.txt` has 4,464 entries) plus the merged `version.data` → pushed into the
    app's files folder by `assets/sync_device_assets.ps1` (step 4).
 
-`assets/Bundles/` (the full 5.2 GB repository) and `assets/live2d-models/` are included for
+`assets/Bundles/` (the full 5.2 GB repository) and `assets/live2d-models/` are in the asset pack for
 completeness; normal play only uses the OBB + the bundles the sync script installs.
 
 ## Steps
@@ -52,11 +52,11 @@ completeness; normal play only uses the OBB + the bundles the sync script instal
    adb -s $D shell "su 0 sh -c 'mkdir -p /sdcard/Android/obb/$P; cp /data/local/tmp/main.obb /sdcard/Android/obb/$P/main.10009.$P.obb; chmod 666 /sdcard/Android/obb/$P/main.*.obb'"
    ```
 
-4. **Sync the extra bundles + the merged asset table.** From `GCG2-Offline/`, run (PowerShell):
+4. **Sync the extra bundles + the merged asset table.** From `GirlCafeGun-Offline/`, run (PowerShell):
    ```powershell
    powershell -File assets\sync_device_assets.ps1 -Device 127.0.0.1:16448
    ```
-   It installs the merged `version.data` and the ~380 bundles the current content needs beyond the OBB,
+   It installs the merged `version.data` and the bundles the current content needs beyond the OBB,
    straight into the app's files folder (over `adb` + root). It prints `device assets installed` (or
    `device assets up to date`). Re-running it is safe; it only pushes what's missing.
 
@@ -66,7 +66,7 @@ completeness; normal play only uses the OBB + the bundles the sync script instal
    ```
 
 The first launch shows a Terms-of-Use dialog (tap **Agree to all & start**). At the title screen the
-server shows as **Local**. Tap **新账号 (New Account)** → **Tap Screen to Start** to create a fresh
+server shows as **Local**. Tap **New Account** → **Tap Screen to Start** to create a fresh
 account and begin the tutorial. Everything runs on the device — no internet needed.
 
 ## Troubleshooting

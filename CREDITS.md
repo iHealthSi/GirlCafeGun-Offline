@@ -32,8 +32,8 @@ reimplementation.
 
 What we used from it: the full server source (`server/src/`, projects App / Core
 / Game / Protocol) and the config-table loader. What we changed on top (all under
-the server's MIT license): a settle-validation fix in `ChapterHandler`, and two
-Android-runtime fixes required to run it natively on a phone — the login-gate
+the server's MIT license): a settle-validation fix in `ChapterHandler`, later server fixes (see
+`git log -- server/`), and two Android-runtime fixes required to run it natively on a phone — the login-gate
 3DES cipher moved to the managed **BouncyCastle** implementation, and random-key
 generation moved to `Random.Shared` (both avoid an OpenSSL-init crash on Android).
 
@@ -41,7 +41,8 @@ generation moved to `Random.Shared` (both avoid an OpenSSL-init crash on Android
 
 - The offline-APK build tooling: `apk-build/shim.c`, `host.c`, `repack.py`,
   `patch_il2cpp.py`.
-- The installer / build / packaging scripts in `scripts/`.
+- The installer / build / packaging scripts in `scripts/`, `apk-build/installer/` and `tools/` (`package.ps1`,
+  `patch_lua_*.py`, `tableset.py`, `extract_setting.py`, `lua/`).
 - The documentation in `docs/`, this file, and the project page.
 
 ## Third-party components pulled at build time

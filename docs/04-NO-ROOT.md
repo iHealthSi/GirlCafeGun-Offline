@@ -2,7 +2,9 @@
 
 The normal installer (`INSTALL.bat`) assumes a **rooted** emulator (MuMu Player with Root on),
 because pushing the content bundles into another app's `Android/data` folder needs root on most
-setups. This page is for a **non-rooted** device/emulator.
+setups. This page is for a **non-rooted** device/emulator. The emulator route (`INSTALL.bat`, `scripts/install.ps1`) uses `gcg_offline.apk`. The phone package route (`tools/package.ps1`, `HOW-TO-INSTALL.txt`) uses `GirlCafeGun.apk`, built from the base APK `gcg_offline_fixed.apk`.
+
+For a phone, the current route is the phone package (`GirlCafeGun.apk` + `GirlCafeGun-data.gcg`, see [../HOW-TO-INSTALL.txt](../HOW-TO-INSTALL.txt)) or `assets\sync_phone.ps1`; both are described in [05-PHONE-PORT.md](05-PHONE-PORT.md). The methods below are the older manual routes.
 
 Three pieces have to get onto the device. Only one of them is actually hard without root:
 
@@ -46,7 +48,7 @@ Now do the bundles with **one** of the methods below.
 
 ## Step 2 — the bundles (pick one method)
 
-### Method A — Shizuku  ·  recommended, no root, no rebuild
+### Method A — Shizuku  ·  manual route, no root, no rebuild
 
 [Shizuku](https://shizuku.rikka.app/) gives apps ADB-level access **without root**. A Shizuku-aware
 file manager can then write into `Android/data`.
@@ -67,6 +69,9 @@ file manager can then write into `Android/data`.
    ```
    Keep the subfolder layout (`p_other/`, `o_big/`, `2danimation/`, …). Also copy
    `assets/device_assets/version.data` into that same `files/` folder, replacing the one there.
+   For English text also copy the patched files from `assets/device_assets/overrides/` (`lang.u`, `lua.u`,
+   `versioncrc.json`, `ui/ui_login_prefab.u`): without `lua.u` and `versioncrc.json` the English text is missing.
+   The phone port also needs `AutoAudio` and `Raw`; see [05-PHONE-PORT.md](05-PHONE-PORT.md).
 
 This is the most reliable route on Android 11–14.
 

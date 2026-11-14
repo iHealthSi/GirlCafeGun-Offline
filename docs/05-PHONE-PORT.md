@@ -1,12 +1,12 @@
-# 05 — Real-phone port, English text, player package (2026-11-11)
+# 05 — Real-phone port, English text, player package (2026-11-11 to 2026-11-14)
 
 Everything done to make this build run on a real, non-rooted phone (tested on a Samsung Galaxy S24+,
-SM-S926B, Android 17) and to ship it to players without a PC. The emulator-era docs (01–03) still
+SM-S926B, Android 17) and to ship it to players without a PC. The emulator-era docs (01–04) still
 describe the original design; this file lists what changed and why.
 
 ## 1. Player package (no PC, no root, no USB debugging)
 
-Two files in the project root:
+Three files in the project root:
 
 | File | Size | What |
 |---|---|---|
@@ -29,7 +29,7 @@ picker, no permission needed) → unpack → "Delete file" frees 5.1 GB → reop
   checks free space, rejects other files, reports incomplete downloads, and writes the marker last.
 - Tested: OBB hidden on the phone, real picker flow, unpack < 20 s, new OBB byte-identical,
   "Delete file" works, next start goes straight to the title with no missing bundles.
-  Not yet tested on a phone that never had the game.
+  Not tested on a phone that never had the game (state on 2026-11-14).
 
 Build:
 ```
@@ -91,7 +91,19 @@ Method addresses were found with a small own il2cpp v24.1 metadata reader (metad
   `Spine` object (`ShowConcertModel`, `girl1002_2da02`) that the script never touches; in the build-5
   OBB prefab it is on, so it was drawn over the hall title. The live game fixed this in
   build 179 by turning `Spine` off (the only byte that differs between the two prefabs).
-- Now: `Load2DBG` picks sky or hall at random each launch and turns `Spine` on only for the sky.
+- First edit (by hand, in the built `lua.u`): `Load2DBG` picked sky or hall at random each launch and turned
+  `Spine` on only for the sky.
+- Now (gcg2#33): `python -I tools/patch_lua_title.py` places `tools/lua/TitleScreens.lua` before `Load2DBG` and
+  replaces the language test with `TitleScreens.Choose(self)`. Four titles rotate: `hall`, `sky`
+  (`bg_login04`, suit 2), `snow` (`bg_login03`, suit 1), `shards` (`bg_login05`, suit 3). `Spine` is a
+  `ShowConcertModel` (girl 1002); the module sets `SuitId`, calls `Load()` and puts the picture on
+  `PnlBGEffect/Image3`. A title shows only when its picture and its suit load; hall and the prefab's own scene are
+  always possible. Each login writes `[title] <name>` to logcat (`adb logcat -s Unity | grep "\[title\]"`).
+  Run the tool once for the active set and once for the parked one (`assets/device_assets/sets/<name>/overrides/lua.u`).
+  A title can set `scale` (of the model), `position` (of `Spine`) and `logo` (of `PnlBG/ImgLogo`). Phone test,
+  Galaxy S24+ 2026-11-14: each title opened alone and looked at; `shards` needs scale 83 (far too large at the
+  prefab's 133), and the logo goes to the top right for `snow` and `shards` (in its stock place it covers a face).
+  Six starts in a row with the full table logged sky, hall, snow, sky, shards, sky.
 - `ui/ui_login_prefab.u`: build-179 prefab with English labels (New Account, Enter Account, …) and
   Text best-fit enabled.
 
@@ -122,9 +134,9 @@ Method addresses were found with a small own il2cpp v24.1 metadata reader (metad
 | `apk-build/make_data_package.py` | build `GirlCafeGun-data.gcg` |
 | `apk-build/installer/` | first-run installer (Java) |
 | `assets/sync_phone.ps1` | developer sync for a non-root phone over adb (OBB, bundles, audio, videos, overrides, love.u); the old `sync_device_assets.ps1` needs root |
-| `assets/device_assets/overrides/` | patched `lang.u`, `lua.u`, `versioncrc.json`, `ui/ui_login_prefab.u` + README |
+| `assets/device_assets/overrides/` | patched `lang.u`, `lua.u`, `setting.u`, `versioncrc.json`, `ui/ui_login_prefab.u` + README |
 | `assets/Bundles/ui/ui_login_prefab.u.orig` | untranslated build-179 prefab |
-| `gcg_offline_fixed.apk` | previous APK without the installer (server + runtime fixes only) |
+| `gcg_offline_fixed.apk` | base APK for `tools/package.ps1` (stock game + libil2cpp patch + shim); required, git-ignored |
 
 ## 6. Bug review (2026-11-11)
 

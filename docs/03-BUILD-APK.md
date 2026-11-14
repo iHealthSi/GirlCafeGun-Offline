@@ -6,12 +6,12 @@
 > keeps saves in `files/sssjsave`. When the server changes, re-run `dotnet publish` (steps below) and replace
 > the data tar **and** the 7 runtime `.so` together. See [05-PHONE-PORT.md](05-PHONE-PORT.md).
 
-How the self-contained `gcg_offline.apk` is made, in case you change the server and want to re-bake it.
-The build sources are in `apk-build/`.
+How the self-contained APK is made, in case you change the server and want to re-bake it.
+The build sources are in `apk-build/`. The emulator route (`INSTALL.bat`, `scripts/install.ps1`) uses `gcg_offline.apk`. The phone package route (`tools/package.ps1`, `HOW-TO-INSTALL.txt`) uses `GirlCafeGun.apk`, built from the base APK `gcg_offline_fixed.apk`.
 
 ## One command: `tools/package.ps1` (use this)
 ```powershell
-powershell -File tools\package.ps1                 # normal run
+powershell -File tools\package.ps1 -Password <pw> # normal run (or set env GCG_PACK_PASSWORD)
 powershell -File tools\package.ps1 -RebuildData    # force a new GirlCafeGun-data.gcg
 powershell -File tools\package.ps1 -SplitSize 3900m  # split the full pack into 7-Zip volumes
 ```
@@ -31,6 +31,8 @@ signs with `sssj.keystore`) -> verify (apksigner; embedded server DLL SHA-256 ==
 - Install on a phone: `adb install -r dist\...apk` keeps saves and data (same signature). Ask the project owner first.
 
 The manual steps below explain what the script automates.
+
+`-Password` (or the `GCG_PACK_PASSWORD` environment variable) is required: it is the AES-256 password of both zip packs. The script stops without it.
 
 ## How it works
 A shim replaces the game's tiny `libmain.so` (Unity's JNI entry) and, on launch:
@@ -57,6 +59,8 @@ library dir.
   old signature, add the new `lib/arm64-v8a/*` entries.
 - `sssj.keystore` → the signing key (store/key password `sssjsssj`, alias `sssj`).
 - `libmain_orig_arm64.so` → the stock Unity libmain (shipped inside the APK as `libmain_orig.so`).
+
+Historical: the manual steps below describe the first emulator build. The current build is `tools\package.ps1` (above).
 
 ## Tools needed
 - **.NET 10 SDK** (to publish the server for Android).
@@ -134,7 +138,7 @@ Re-signing with the same key means you can update an already-installed copy with
   URL is built, the client never upgrades `http://127.0.0.1:9080` to `https`, so no socket surgery is
   needed — don't kill the `:9080` socket (it drops the good http connection).
 
-## Non-rooted phones — the device needs a live network (even offline)
+## Non-rooted phones — no network needed
 The server runs out of the app's **native-library** dir, not the data dir, so it does **not** need
 root: Android marks the lib dir exec-allowed, and the shim symlinks the runtime `.so` there before
 forking the host. (The data dir, which stock arm64 / targetSdk 30+ blocks from executing under
@@ -163,5 +167,7 @@ on a slow cold boot.
 
 Asset delivery (the ~1.7 GB OBB + the extra bundles) is the other non-root consideration: the OBB goes
 to the public `Android/obb/<pkg>/` (writable over `adb push` without root), and the bundles go to the
-app's external files dir. `sync_device_assets.ps1` uses `su` for a rooted emulator; a pure-non-root
-flow pushes to those public paths instead. See [01-PLAY.md](01-PLAY.md).
+app's external files dir. `sync_device_assets.ps1` uses `su` for a rooted emulator. A plain `adb push` into
+`Android/data` does not work without root (see [04-NO-ROOT.md](04-NO-ROOT.md)). On a phone, use the first-run
+installer in the APK or `assets\sync_phone.ps1`: see [05-PHONE-PORT.md](05-PHONE-PORT.md) and
+[../HOW-TO-INSTALL.txt](../HOW-TO-INSTALL.txt).

@@ -54,6 +54,15 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $z = [IO.Compression.ZipFile]::OpenRead($obbLocal.FullName)
 $inObb = @{}; foreach ($e in $z.Entries) { if ($e.FullName.StartsWith("assets/")) { $inObb[$e.FullName.Substring(7)] = 1 } }
 $z.Dispose()
+# Late content set (tools\tableset.py, docs\12-LATE-CONTENT.md): the build-179 copies of bundles that the OBB holds in
+# an older form go to the phone too. In the build5 set they must stay out.
+$changed = @{}
+$marker = Join-Path $here "device_assets\tableset.txt"
+$tableset = "build5"; if (Test-Path $marker) { $tableset = (Get-Content $marker -Raw).Trim() }
+if ($tableset -eq "late") {
+    foreach ($l in Get-Content (Join-Path $here "device_assets\late_changed_bundles.txt")) { if ($l.Trim()) { $changed[$l.Trim()] = 1 } }
+}
+Write-Host "content set: $tableset ($($changed.Count) bundles replace their OBB copy)"
 
 # 2-5: build the list of (source file, phone path)
 $push = New-Object System.Collections.Generic.List[object]
@@ -66,7 +75,7 @@ foreach ($f in Get-ChildItem $bundles -Recurse -File) {
     $rel = $f.FullName.Substring($bundles.Length + 1).Replace('\', '/')
     if ($rel -like "*.orig" -or $rel -eq "remoteversion.data") { continue }
     $isAsset = $rel -like "*.u" -or $rel -like "Raw/*" -or $rel -like "AutoAudio/*"
-    if ($isAsset -and -not $inObb.ContainsKey($rel)) { Want $f.FullName $rel }
+    if ($isAsset -and (-not $inObb.ContainsKey($rel) -or $changed.ContainsKey($rel))) { Want $f.FullName $rel }
 }
 foreach ($f in Get-ChildItem $overrides -Recurse -File) {
     if ($f.Name -eq "README.txt") { continue }

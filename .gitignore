@@ -1,6 +1,6 @@
 # ─── Copyrighted / game-derived payload — NEVER commit (see CREDITS.md) ───────
 # These belong to Seasun (西山居) / the game's publisher, not to this project.
-# They are delivered as a separate, user-hosted "asset pack" (see docs/INSTALL.md),
+# They are delivered as a separate, user-hosted "asset pack" (see README.md and HOW-TO-INSTALL.txt),
 # not redistributed here. The installer downloads them from a URL you set.
 gcg_offline.apk
 *.apk
@@ -11,6 +11,9 @@ assets/obb/
 assets/device_assets/version.data
 assets/device_assets/*.bak
 server/setting/
+server/setting.*/
+assets/device_assets/sets/
+assets/device_assets/tableset.txt
 apk-build/orig.apk
 apk-build/libil2cpp.so
 apk-build/libmain_orig*.so

@@ -151,6 +151,13 @@ static void* server_thread(void* arg) {
     mkdir(FILESDIR, 0771);
     snprintf(cmd, sizeof(cmd), "rm -rf '%s'; mkdir -p '%s'; cd '%s' && /system/bin/toybox tar xzf '%s/libsssjdata.so'", SRVDIR, SRVDIR, SRVDIR, g_libdir);
     LOGI("extract rc=%d", system(cmd));
+    // The save is app-private and the APK is not debuggable, so nothing outside the app can read it. Before the
+    // server touches it, copy it once per day to the public files folder (adb pull .../files/save-backup).
+    // chmod: the app makes the folder owner-only, and then adb (group ext_data_rw) cannot read it.
+    snprintf(cmd, sizeof(cmd), "b=/storage/emulated/0/Android/data/" PKG "/files/save-backup; d=$b/$(date +%%Y%%m%%d); "
+        "[ -d '%s/sssjsave' ] && [ ! -d \"$d\" ] && mkdir -p \"$d\" && cp -r '%s/sssjsave/.' \"$d\"/; "
+        "chmod -R g+rwX \"$b\"", FILESDIR, FILESDIR);
+    LOGI("save backup rc=%d", system(cmd));
     // The runtime .so ship in the native-library dir (exec-allowed under enforcing SELinux); symlink them
     // next to the app DLLs so the runtime resolves everything from one place. dlopen follows the symlink to
     // the real file in the lib dir, which SELinux permits an app to execute.

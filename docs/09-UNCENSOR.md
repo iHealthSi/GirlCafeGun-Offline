@@ -42,6 +42,8 @@ Two things make this build uncensored:
 `INSTALL.bat` / `install.ps1` applies it after syncing the bundles: it creates an empty
 `l2d/girl111/love.u` on the device. Nothing else to do.
 
+On a phone, the data package carries `love.u` ([05-PHONE-PORT.md](05-PHONE-PORT.md) 3.3).
+
 To install **without** the uncensor (leave it as the global release):
 
 ```

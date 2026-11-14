@@ -20,12 +20,19 @@ For preservation and study only. **Scan anything you download before running it.
 > gamepad layer and local copies of the web pages the client used to load online. The list is in
 > [docs/05-PHONE-PORT.md](docs/05-PHONE-PORT.md).
 
+> **Update 2026-11-14: the project base is now GirlCafeGun-Remake.** New feature work goes to
+> [zirenmidori/GirlCafeGun-Remake](https://github.com/zirenmidori/GirlCafeGun-Remake) (TypeScript server, chapters 1-16,
+> signed updates). This repository stays as the C# build and as the source of fixes that are ported there
+> (pull requests 1 to 4 on that repository: save backups, controller, story editor, title screens).
+
 ---
 
 ## Quick start — just play
 
 1. **Get the asset pack** (the ~6 GB of game files needed to play) and unzip it so that
-   `gcg_offline.apk` and the `assets/` folder sit next to **`INSTALL.bat`**.
+   `gcg_offline.apk` and the `assets/` folder sit next to **`INSTALL.bat`**. (The emulator route
+   (`INSTALL.bat`, `scripts/install.ps1`) uses `gcg_offline.apk`. The phone package route (`tools/package.ps1`,
+   `HOW-TO-INSTALL.txt`) uses `GirlCafeGun.apk`, built from the base APK `gcg_offline_fixed.apk`.)
 2. Start an **arm64** Android emulator — [MuMu Player 12](https://www.mumuplayer.com/) with
    **Root** on is easiest — or connect an arm64 phone with USB debugging.
 3. Double-click **`INSTALL.bat`**.
@@ -73,7 +80,11 @@ GirlCafeGun-Offline/
 │   └─ patch_obb_envir.py    points the OBB server list at the local server
 ├─ tools/
 │   ├─ package.ps1           one command: server publish, APK, data package, archives, checks
-│   └─ patch_lua_*.py        client Lua patches (free store packs, gamepad, local web pages)
+│   ├─ patch_lua_*.py        client Lua patches (free store packs, gamepad, local web pages, title screens)
+│   ├─ tableset.py           switch the active server/setting table set
+│   ├─ extract_setting.py    extract the server tables from the game data
+│   ├─ lua/                  Lua sources used by the patches (gamepad, title screens)
+│   └─ remake/               build_phone_update.py: our update package for a phone that runs GirlCafeGun-Remake
 ├─ server/                 the embedded server — sssj-new source (MIT) + setting/ (not committed)
 ├─ docs/
 │   ├─ project.html          project overview + limitations (open in a browser)
@@ -87,11 +98,15 @@ GirlCafeGun-Offline/
 │   ├─ 08-ONLINE-RESOURCES.md  online addresses the client still asks for: local fixes + ledger
 │   ├─ 09-UNCENSOR.md        the love.u uncensor patch (restores Live2D interactions)
 │   ├─ 10-CONNECTION-FIX.md  why "Connection error" happened and the static envir.json fix
-│   └─ 11-CONTROLLER.md      Bluetooth gamepad in shooting stages
+│   ├─ 11-CONTROLLER.md      Bluetooth gamepad in shooting stages
+│   ├─ 12-LATE-CONTENT.md    chapters 13-16 and later banners (build 179 set; phone: reaches the title screen, play after login not checked)
+│   ├─ 13-DRESS-AUDIT.md     dress audit: wiki list against cards, sources and assets
+│   ├─ 14-DRESS-MISSING.md   dresses with something missing, with wiki links
+│   └─ 15-REMAKE-PHONE-BUILD.md  phone build on the Remake base: official Remake APK + our signed update package
 ├─ assets/                 game files — NOT committed (see .gitignore); delivered via the pack
 │   ├─ sync_device_assets.ps1   pushes the content bundles + merged table to the device (root)
 │   ├─ sync_phone.ps1           the same for a phone without root, over adb
-│   └─ device_assets/           added_bundles.txt (the bundle list) + version.data
+│   └─ device_assets/           bundle lists (added_bundles*.txt, late_changed_bundles.txt), tableset.txt, sets/, overrides/, version.data
 ├─ CREDITS.md              attribution + intellectual-property notice (read this)
 └─ LICENSE                 MIT — covers this repo's original work only
 ```
@@ -131,7 +146,7 @@ Re-signing uses the included debug key, so you can update an install in place wi
 | "Connection error" / calls official server | ✅ Fixed — serverlist points local statically ([docs/10-CONNECTION-FIX.md](docs/10-CONNECTION-FIX.md)) + airplane gate patched |
 | Missing voice / scenes / art | ✅ Fixed — the full bundle set the game references now ships |
 | Censored Live2D touch/flirting interactions | ✅ Restored by default (love.u) — [docs/09-UNCENSOR.md](docs/09-UNCENSOR.md); `-NoUncensor` to opt out |
-| Chinese title buttons (新账号 / 输入账号) | ⚠️ Known — baked into the EN login-UI prefab; not yet translated |
+| Chinese title buttons (新账号 / 输入账号) | ✅ Fixed — the login prefab carries English labels ([docs/05-PHONE-PORT.md](docs/05-PHONE-PORT.md)) |
 | Background telemetry calls | ⚠️ Harmless — fail silently offline; don't block play |
 | Non-rooted phones | ✅ Works — in-game data installer ([HOW-TO-INSTALL.txt](HOW-TO-INSTALL.txt)) or `assets\sync_phone.ps1` over adb; Shizuku / file manager route in [docs/04-NO-ROOT.md](docs/04-NO-ROOT.md) |
 | Real arm64 phones (Android 11+) | ✅ Fixed — heap pointer tagging is turned off before the server runtime starts |

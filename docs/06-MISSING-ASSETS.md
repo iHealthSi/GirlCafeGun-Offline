@@ -5,12 +5,13 @@ and against the bundle list in `assets/device_assets/version.data` (the OBB's ow
 
 ## Result
 - The OBB equals the xapk OBB (1,782,457,829 bytes). Only `assets/envir.json` differs (our patch), plus 4 bytes next to it (not examined).
-- All 1,685 OBB entries and all 380 `added_bundles.txt` entries exist in `assets/Bundles/`.
+- All 1,685 OBB entries and all 380 `added_bundles.txt` entries (as audited on 2026-11-11; the file has 4,464 lines now, the 380 list is `added_bundles.minimal.txt`) exist in `assets/Bundles/`.
 - **427 bundles** named in `version.data` exist in neither the OBB nor `assets/Bundles/`.
   - 409 are on the game's own not-required list (`exceptBundles.txt`, inside the OBB).
   - **18 are not on that list** (story voice). Expect missing voice in story scenes.
 - Another 2,408 bundles are in `assets/Bundles/` but not in the OBB or `added_bundles.txt`. All are on the not-required list. Not pushed to the phone.
-- Not tested on a device.
+- Phone, 2026-11-11: the game starts and reaches the title with no missing-bundle error
+  ([05-PHONE-PORT.md](05-PHONE-PORT.md), section 1). Nobody listened for the 18 story-voice bundles (gcg2#11).
 
 ## Why they cannot be restored now
 - The xapk holds only the APK and the OBB.

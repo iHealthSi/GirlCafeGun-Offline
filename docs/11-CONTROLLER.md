@@ -3,7 +3,9 @@
 Goal: play the shooting stages with a Bluetooth gamepad connected to the phone. The game reads the controller
 itself. No touch overlay, no key-to-touch mapper.
 
-Status: **built and tested offline (mock runtime); not yet tested on a phone with a real controller.**
+Status: **built and tested offline (mock runtime). Tested on a Galaxy S24+ with an Xbox pad on 2026-11-11: works, needs improvements (Kanzo card gcg2#18).**
+
+The same layer is pull request 2 on GirlCafeGun-Remake (`release/client/gamepad_fight.lua`).
 
 ## 1. What the client already has (evidence)
 
@@ -75,9 +77,14 @@ Phone test plan:
 3. Check: move, stop, hold fire, twin-stick aim (does `OnFight(dir)` aim, or only auto-aim?), skills, dodge,
    pause, auto-fight, and touch controls still work with the pad connected.
 
-## 5. Open questions (need the phone)
+Result, 2026-11-11 (Galaxy S24+, Xbox Wireless Controller, gcg2#18): step 1 passed, `[pad] started` and
+`[pad] stopped` on every fight, no `disabled` line. The owner played steps 2 and 3 without a written list:
+"looks like it works, but needs improvements". The list of improvements is card gcg2#19.
 
-- Is `Game.Timer.Add(0.01, 0.01, fn)` per frame and repeating? (Lua code uses `Add(0.1, 0.1, fn)` as a repeat.)
+## 5. Open questions (state on 2026-11-14)
+
+- Answered by the phone test: `Game.Timer.Add(0.01, 0.01, fn)` repeats (the layer read the pad through whole
+  fights). Its real period was not measured.
 - Does `OnFight(dir)` aim in `dir`, or is the vector ignored (auto-aim)? If ignored, right-stick aim needs another call.
 - Girl switching and weapon skill (`WeaponSkill` = RB in the game's table) are not mapped yet.
 - Menus (story, results, rewards) need touch. UI navigation with the pad is a separate card.

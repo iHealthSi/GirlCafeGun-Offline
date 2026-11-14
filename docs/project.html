@@ -73,6 +73,10 @@
     <p class="note">This is not affiliated with or endorsed by the game's creators. It ships <strong>no
     game assets</strong> — you provide your own from a copy of the official app you own. See
     <a href="#credits">Credits &amp; IP</a>.</p>
+    <p class="note"><strong>Since 2026-11-14 the project base is
+    <a href="https://github.com/zirenmidori/GirlCafeGun-Remake">GirlCafeGun-Remake</a></strong> (TypeScript server,
+    chapters 1-16, signed updates). This page describes the C# build, which stays as the source of fixes that are
+    ported there. The phone build on the Remake base is in <code>docs/15-REMAKE-PHONE-BUILD.md</code>.</p>
   </div>
 
   <h2>How it works</h2>
@@ -134,17 +138,33 @@
         <td>The global build gates these via a server flag; the installer applies the <code>love.u</code>
           bypass by default so they run at full level (<code>-NoUncensor</code> to opt out). The animations
           were never removed from the model — only gated. The base art is identical across regions.</td></tr>
-      <tr><td>Chinese title buttons (新账号 / 输入账号)</td><td><span class="pill no">Known</span></td>
-        <td>“New Account” / “Enter Account” text is baked into the EN build's login UI prefab (an upstream
-          localization gap), not an editable table. Fixing it means editing a Unity bundle — a separate
-          task. The intro and most text are English.</td></tr>
+      <tr><td>Chinese title buttons (新账号 / 输入账号)</td><td><span class="pill ok">Fixed</span></td>
+        <td>The login prefab (<code>ui/ui_login_prefab.u</code>) now carries English labels (New Account /
+          Enter Account); see <code>docs/05-PHONE-PORT.md</code>. The intro and most text are English.</td></tr>
       <tr><td>Background telemetry calls</td><td><span class="pill no">Harmless</span></td>
         <td>Bundled analytics SDKs (Crasheye, xgsdk, Firebase) still try to phone home and fail silently
           offline. They don't block play and nothing reaches them. After many offline launches a backlog
           can slow boot — clear it with <code>adb shell pm clear …</code> (wipes the local account).</td></tr>
-      <tr><td>Non-rooted phones</td><td><span class="pill no">Partial</span></td>
-        <td>The server itself needs no root. Asset delivery without root is the open piece; the installer
-          assumes a rooted emulator for pushing files. See <code>docs/03-BUILD-APK.md</code>.</td></tr>
+      <tr><td>Non-rooted phones</td><td><span class="pill ok">Works</span></td>
+        <td>The server needs no root. A phone uses the in-app data installer (<code>HOW-TO-INSTALL.txt</code>)
+          or <code>assets\sync_phone.ps1</code> over adb. See <code>docs/05-PHONE-PORT.md</code>.</td></tr>
+      <tr><td>Real arm64 phones (Android 11+)</td><td><span class="pill ok">Fixed</span></td>
+        <td>Heap pointer tagging is turned off before the server runtime starts. Tested on a Galaxy S24+.
+          See <code>docs/05-PHONE-PORT.md</code>.</td></tr>
+      <tr><td>Store packs / paid currency offline</td><td><span class="pill ok">Works</span></td>
+        <td>The server grants the packs for free and the client skips the payment SDK. The GM panel money
+          buttons work.</td></tr>
+      <tr><td>Bluetooth gamepad in shooting stages</td><td><span class="pill ok">Works</span></td>
+        <td>Move, fire, aim, skills, dodge, pause and auto-fight. Menus still need touch.
+          See <code>docs/11-CONTROLLER.md</code>.</td></tr>
+      <tr><td>Notice and server-error web pages</td><td><span class="pill ok">Works</span></td>
+        <td>The embedded server serves local copies. See <code>docs/08-ONLINE-RESOURCES.md</code>.</td></tr>
+      <tr><td>Title screens</td><td><span class="pill ok">Works</span></td>
+        <td>Four titles in rotation (hall, sky, snow, shards); a title whose art does not load is left out.
+          See <code>docs/05-PHONE-PORT.md</code>, section 3.2.</td></tr>
+      <tr><td>Chapters 13-16 and banners after July 2022</td><td><span class="pill no">Partial</span></td>
+        <td>The late table set (build 179) starts on a phone up to the title screen; play after login is not
+          checked. See <code>docs/12-LATE-CONTENT.md</code>.</td></tr>
       <tr><td>Real online services / multiplayer</td><td><span class="pill no">N/A</span></td>
         <td>This is single-player offline only by design. It does not and must not touch official servers.</td></tr>
     </table>

@@ -9,6 +9,8 @@
     4. compile the shim (libmain.so) + host (libsssjhost.so)   [NDK android30 clang]
     5. extract the stock libmain as libmain_orig.so from YOUR orig.apk
     6. repack (repack.py) -> zipalign -> apksigner  (key: apk-build/sssj.keystore)
+    7. phone package GirlCafeGun.apk: the same APK plus the first-run data installer and the
+       gamepad axes (apk-build/build_offline_apk.py); skip with -NoInstaller
 
   You must provide a pristine stock APK as -OrigApk (the official
   com.biligameglobal.girlcafegungp base.apk). Nothing from the game is shipped in

@@ -11,7 +11,7 @@ namespace SssjServer.Core;
 /// the server DLL in <c>libsssjdata.so</c>.
 ///
 /// Who asks for them: the client Lua, after <c>tools/patch_lua_offline_web.py</c> rewrote the page
-/// URLs (function <c>OfflineWebUrl</c> in <c>Lib.lua</c>). Full list: <c>docs/07-ONLINE-RESOURCES.md</c>.
+/// URLs (function <c>OfflineWebUrl</c> in <c>Lib.lua</c>). Full list: <c>docs/08-ONLINE-RESOURCES.md</c>.
 /// </summary>
 public static class WebAssets
 {

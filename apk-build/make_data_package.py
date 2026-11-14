@@ -33,6 +33,16 @@ def main():
     obb_path = os.path.join(obbdir, obb)
     with zipfile.ZipFile(obb_path) as z:
         in_obb = {n[len("assets/"):] for n in z.namelist() if n.startswith("assets/")}
+    # Late content set (tools/tableset.py, docs/12-LATE-CONTENT.md): the build-179 copies of bundles that the OBB
+    # holds in an older form go to the phone too. In the build5 set they must stay out (their layout needs the
+    # build-179 scripts).
+    marker = os.path.join(ASSETS, "device_assets", "tableset.txt")
+    tableset = open(marker, encoding="utf-8").read().strip() if os.path.exists(marker) else "build5"
+    changed = set()
+    if tableset == "late":
+        with open(os.path.join(ASSETS, "device_assets", "late_changed_bundles.txt"), encoding="utf-8") as f:
+            changed = {line.strip() for line in f if line.strip()}
+    print(f"content set: {tableset} ({len(changed)} bundles replace their OBB copy)")
 
     entries = []  # (archive name, source path or bytes)
     entries.append(("obb/" + obb, obb_path))
@@ -54,7 +64,7 @@ def main():
             if rel.endswith(".orig") or rel == "remoteversion.data" or rel in override_rel:
                 continue
             is_asset = rel.endswith(".u") or rel.startswith("Raw/") or rel.startswith("AutoAudio/")
-            if is_asset and rel not in in_obb:
+            if is_asset and (rel not in in_obb or rel in changed):
                 entries.append(("files/" + rel, p))
     entries.append(("files/l2d/girl111/love.u", b"love\n"))
 
