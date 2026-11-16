@@ -77,7 +77,16 @@ table is translated, so text is English but art with text in it is the Chinese a
 
   Each is ETC_RGB4, 2048 x 1024, one mip, 1,048,576 bytes in a `.resS` stream: the new pixels go over the old
   bytes in place, and the tool asserts that no other byte of the unpacked file changed.
-- Other art with text in it (`*_Mul` sprites in other screens) was not looked at.
+- Other art with text in it (card gcg2#78, 2026-11-16): the game names it `*_Mul`. 378 pictures in 67 bundles
+  had Chinese words where the English data has English (the 返回 back button `common_button_back_Mul`, the
+  Dismantle/Cancel buttons, battle status labels in `at/`, event titles and banners, shop tiles). The `text-art`
+  stage swaps them (step 2b). Not swapped: art without `_Mul` in its name (same name, other art in the other
+  region: gift boxes, CGs). 18 Chinese or Japanese pictures have no English twin in EN 1.0.9 or the old EN
+  versions (railgun and tower201 tutorials, `fightmode_fourteenthtower_*_Mul`, `towerWarChess2_title_Mul`, some
+  event banners): list in `dist\remake-phone\text-art\report.json`, `noEnglishTwin`. One Chinese word comes
+  from Lua itself (`UI_CafeItemTips.lua:220`, "... attraction 5点"): `lua --english-text`. Every other CJK
+  literal of `lua.u` is a key, a comparison or a log line. Prefab texts with CJK are placeholders that Lua
+  replaces (the EN prefabs hold the same).
 
 ## Inputs
 
@@ -108,12 +117,17 @@ python tools\remake\repack_apk.py apk --apk APK --data dist\remake-phone\apk\dat
 C:\platform-tools\adb.exe install -r dist\remake-phone\apk\GCG-Offline-v0.1.3-gcg2-b.apk
 
 # 1. lua.u: the released script bundle plus our recipes, then the mock tests on the result
-PY310 tools\remake\build_phone_update.py lua --apk APK --client-dir WT\release\client --hooks-only --english-title --offline-web --offline-links --tests --out dist\remake-phone\lua.u
+PY310 tools\remake\build_phone_update.py lua --apk APK --client-dir WT\release\client --hooks-only --english-title --english-text --offline-web --offline-links --tests --out dist\remake-phone\lua.u
 #    --offline-links needs a client dir with patch_offline_links.py (Remake branch gcg2-web-cleanup, cards gcg2#24-26)
 
 # 2. login atlas with the English sprites
 C:\platform-tools\adb.exe pull FILES/ui_tx/ui_login.u dist\remake-phone\from-phone\ui_tx\ui_login.u
 PY310 tools\remake\build_phone_update.py art --remake-atlas dist\remake-phone\from-phone\ui_tx\ui_login.u --en-atlas assets\Bundles\ui_tx\ui_login.u --out dist\remake-phone\extra\ui_tx\ui_login.u
+
+# 2b. every *_Mul text picture: pull the folders of build_phone_update.TEXT_ART_FOLDERS (for at/ only img*.u
+#     and mat*.u) to dist\remake-phone\cn-ui, then (2 min; needs numpy too):
+PY310 tools\remake\build_phone_update.py text-art --cn-dir dist\remake-phone\cn-ui --en-dir assets\Bundles --out dist\remake-phone\extra-text --report dist\remake-phone\text-art\report.json --preview dist\remake-phone\text-art\preview
+#    the preview sheets show Chinese (left) and English (right) of every swapped picture. Lua: add --english-text to step 1.
 
 # 3. server payload. Drive D: has no junctions, so the source goes to a folder on C: first:
 git -C WT archive gcg2-phone-build-next server/src server/resources server/tsconfig.json server/tsconfig.build.json server/package.json | tar -x -C <C:\scratch>
@@ -169,6 +183,14 @@ Rules of the update chain:
   Support and three bilibili rows); five mock suites true. Phone build tip `1b5e1ed`. Just before it, the save was
   wiped with the save tool (Alex's request; backup `saves-backup\remake\20261116-195714-before-wipe`). The next
   package needs `--base-manifest dist\remake-phone\manifest-gcg2-0.1.3-24.json`.
+- 2026-11-16 20:47 (+04): release `gcg2-0.1.3-25` is APPLIED (read back 24 -> 25; built 20:33; card gcg2#78): the English text art
+  (`extra-text`, 67 bundles, 378 pictures; each input equals its row of manifest 24) and `lua-r25.u` = r24 plus
+  `--english-text` (only `UI_CafeItemTips.lua` differs; five mock suites true). Package 341,440,464 bytes, sha256
+  `3760b241...`. After the apply the title came up (`[title] hall`) and the log shows `ui_tx/common.u` and
+  `ui_tx/ui_login.u` loaded with no error; the swapped pictures were not looked at in play yet (the save is new).
+  The phone's `files/updates` holds 24 and 25; 19 to 23 moved to `files/updates/applied` (the Choose update list
+  showed them oldest first and 25 was below the fold). The next package needs
+  `--base-manifest dist\remake-phone\manifest-gcg2-0.1.3-25.json`.
 - The game rewrites `files/version.data` at its first start after an install or update (the asset routes
   change, the bundle records do not). So always build on the copy pulled from the phone, not on the copy of the
   release manifest. The pack stage checks that the copy describes the installed release.

@@ -20,6 +20,11 @@ Stages (run each with the Python that the stage names):
           lua.u.orig is not the input that Remake's build pins.
   art     Python 3.10 venv. Paints the English logo, "Tap Screen to Start" and "Log Out" from the English
           client's ui_tx/ui_login.u into the same atlas of the installed Remake data. Pixels only.
+  text-art Python 3.10 venv (UnityPy, PIL, numpy, etcpak). Swaps every *_Mul text picture (sprites of the
+          ui_tx atlases, standalone textures of ui, o_big, c_big, item, poster, bg, at, diy and some single
+          bundles) of a copy of the phone's data for the picture of the same name in the English data
+          (text_art.py). Writes only the changed bundles, at their paths, for pack --extra.
+          lua --english-text: English for the Chinese words that Lua itself writes on screen (CN_TEXT).
   server  Any Python 3.10+, Node.js 22+. Compiles <server-dir>/src with tsc and puts the result
           in place of dist/ inside the payload of the release APK. Everything else in the payload
           (bootstrap, config, tables, zod) stays byte for byte. With --compare-only it reports
@@ -70,6 +75,26 @@ CN_ONLY = (
 def english_title_script(name, source):
     text = source.decode('utf8').replace('\r\n', '\n')
     for old, new in CN_ONLY:
+        if text.count(new) == 1 and old not in text:
+            continue  # already patched
+        assert text.count(old) == 1 and new not in text, old
+        text = text.replace(old, new)
+    return text.encode('utf8')
+
+
+# Chinese words that the Chinese client writes on screen from Lua, not from its text table (sweep of
+# 2026-11-16, card gcg2#78: every CJK literal of lua.u that reaches a .text). The rest are keys or comments.
+CN_TEXT = {
+    'UI_CafeItemTips.lua': (
+        ("' Increase ' .. Customer_Info.Name .. ' attraction ' .. self.One_Item_Info_Setting.AddCustomerValue .. '点'",
+         "' Increase ' .. Customer_Info.Name .. ' attraction by ' .. self.One_Item_Info_Setting.AddCustomerValue"),
+    ),
+}
+
+
+def english_text_script(name, source):
+    text = source.decode('utf8').replace('\r\n', '\n')
+    for old, new in CN_TEXT[name]:
         if text.count(new) == 1 and old not in text:
             continue  # already patched
         assert text.count(old) == 1 and new not in text, old
@@ -152,6 +177,17 @@ def stage_art(a):
     print(json.dumps(report, indent=2))
 
 
+TEXT_ART_FOLDERS = ['ui_tx', 'ui', 'o_big', 'c_big', 'item', 'poster', 'bg', 'at', 'diy',
+                    'riki.u', 't_ui.u', 'e_ui.u', 'ch_ui.u', 'com.u']
+
+
+def stage_text_art(a):
+    """Swap every *_Mul text picture of the installed Remake data for the English one (see text_art.py)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import text_art
+    text_art.run(a.cn_dir, a.en_dir, a.folders, a.out, a.report, only=set(a.only) if a.only else None, preview=a.preview)
+
+
 def stage_lua(a):
     sys.path.insert(0, str(a.client_dir.resolve()))
     import patch_lua
@@ -164,6 +200,9 @@ def stage_lua(a):
         hooks = {n: [m.lua_script] for m in (patch_gamepad, patch_title) for n in m.LUA_NAMES}
         if a.english_title:
             hooks.setdefault('UI_Login.lua', []).append(english_title_script)
+        if a.english_text:
+            for name in CN_TEXT:
+                hooks.setdefault(name, []).append(english_text_script)
         if a.offline_web:
             # Lib.lua and three window scripts; none of them is a script of the recipes above.
             import patch_offline_web
@@ -392,6 +431,7 @@ def main():
     s.add_argument('--out', type=Path); s.add_argument('--expect-release', action='store_true'); s.add_argument('--tests', action='store_true')
     s.add_argument('--hooks-only', action='store_true', help='patch the released lua.u with the controller and title recipes only')
     s.add_argument('--english-title', action='store_true', help='with --hooks-only: hide the age badge and the notice of the Chinese release')
+    s.add_argument('--english-text', action='store_true', help='with --hooks-only: English for the Chinese words that Lua writes on screen (CN_TEXT)')
     s.add_argument('--offline-web', action='store_true', help='with --hooks-only: add the web-window recipe (local Notice page, server-error text)')
     s.add_argument('--offline-links', action='store_true', help='with --hooks-only: add the dead-link recipe (no rate window, new wiki, hidden publisher buttons)')
     s.add_argument('--source', type=Path, help='with --hooks-only: the lua.u to patch, in place of assets/lua.u of the APK')
@@ -402,6 +442,14 @@ def main():
     s.add_argument('--names', nargs='+', default=['login_bg_title_Mul', 'login_bg_text1_Mul', 'btn_logout_Mul'])
     s.add_argument('--out', type=Path, required=True); s.add_argument('--preview', type=Path)
     s.set_defaults(run=stage_art)
+    s = sub.add_parser('text-art')
+    s.add_argument('--cn-dir', type=Path, required=True, help='copy of the phone\'s files/ folders (the installed Remake data)')
+    s.add_argument('--en-dir', type=Path, required=True, help='the English client data (assets/Bundles)')
+    s.add_argument('--folders', nargs='+', default=TEXT_ART_FOLDERS, help='folders or bundles under both dirs')
+    s.add_argument('--only', nargs='+', help='only these bundles (paths relative to --cn-dir)')
+    s.add_argument('--out', type=Path, required=True, help='folder for the changed bundles at their paths (pack --extra)')
+    s.add_argument('--report', type=Path, required=True); s.add_argument('--preview', type=Path, help='folder for before/after sheets')
+    s.set_defaults(run=stage_text_art)
     s = sub.add_parser('server')
     s.add_argument('--apk', type=Path, required=True); s.add_argument('--server-dir', type=Path, required=True)
     s.add_argument('--node-modules', type=Path, required=True); s.add_argument('--remake', type=Path)
