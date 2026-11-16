@@ -3,16 +3,48 @@
 The game must show its title screen. The script taps Update, "Updates in game folder", the package and
 "Trust once and apply", and prints the key fingerprint that the app shows. It refuses to go on when that
 fingerprint is not the one given with --fingerprint (the SHA-256 of our publisher.der).
+Success is the installed release id, not the screen: the script reads releaseId from the app's
+files/release/committed.json (ReleaseStore.state() of the launcher) before and after, through run-as (our APK
+is debuggable; nothing is written), and fails when it is not the release of the package.
 Only for the owner's phone, and only when the owner asked for the update. adb: C:\\platform-tools\\adb.exe.
 MIT, copyright 2026 GCG2-Offline contributors.
 """
-import argparse, re, subprocess, sys, time
+import argparse, json, re, subprocess, sys, time
 
 ADB = r'C:\platform-tools\adb.exe'
+PACKAGE = 'com.zirenmidori.gcg.offline'
+STATE = 'files/release/committed.json'      # relative to the app's private folder, where run-as starts
+SUFFIX = '.gcgupdate'
+RELEASE_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,79}')   # ReleaseManifest.identifier()
 
 
 def adb(*a):
     return subprocess.run([ADB, *a], capture_output=True, timeout=60).stdout.decode('utf8', 'replace')
+
+
+def installed_release():
+    """releaseId of the installed data release, or None when the file cannot be read or holds none."""
+    r = subprocess.run([ADB, 'exec-out', 'run-as', PACKAGE, 'cat', STATE], capture_output=True, timeout=60)
+    if r.returncode != 0:
+        return None
+    try:
+        state = json.loads(r.stdout.decode('utf8'))
+    except ValueError:
+        return None
+    rid = state.get('releaseId') if isinstance(state, dict) else None
+    return rid if isinstance(rid, str) and RELEASE_ID.fullmatch(rid) else None
+
+
+def expected_release(package_name, release_id=None):
+    """The release id the package installs: --release-id, else the file name (build steps name it <id>.gcgupdate)."""
+    rid = release_id
+    if rid is None:
+        if not package_name.endswith(SUFFIX):
+            sys.exit('give --release-id: the package name does not end in ' + SUFFIX)
+        rid = package_name[:-len(SUFFIX)]
+    if not RELEASE_ID.fullmatch(rid):
+        sys.exit('not a release id: ' + rid)
+    return rid
 
 
 def nodes():
@@ -37,12 +69,21 @@ def tap_text(text, wait=20):
     sys.exit('not on screen: ' + text)
 
 
-def main():
+def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--package-name', required=True, help='file name in files/updates, for example gcg2-0.1.3-2.gcgupdate')
     p.add_argument('--fingerprint', required=True, help='SHA-256 of our publisher.der, 64 hex digits')
     p.add_argument('--update-button', default='2188,936', help='x,y of the Update button on the title screen')
-    a = p.parse_args()
+    p.add_argument('--release-id', help='release id the package installs (default: the package name without .gcgupdate)')
+    a = p.parse_args(argv)
+    expected = expected_release(a.package_name, a.release_id)
+    before = installed_release()
+    if before is None:
+        sys.exit('cannot read the installed release id (%s through run-as %s)' % (STATE, PACKAGE))
+    if before == expected:
+        print('already installed:', expected)
+        return
+    print('installed now:', before)
     focus = adb('shell', 'dumpsys window | grep mCurrentFocus')
     if 'com.zirenmidori.gcg.offline/com.unity3d.player.UnityPlayerActivity' not in focus:
         sys.exit('the game is not in front: ' + focus.strip())
@@ -72,7 +113,11 @@ def main():
         time.sleep(3)
         focus = adb('shell', 'dumpsys window | grep mCurrentFocus')
         if 'UnityPlayerActivity' in focus:
-            print('applied; the game restarted')
+            after = installed_release()
+            if after != expected:
+                sys.exit('the game is back, but the installed release is %s, not %s: the update was not applied'
+                         % (after, expected))
+            print('applied: the installed release is now %s (was %s); the game restarted' % (after, before))
             return
         texts = [t for t, _, _ in nodes()]
         if any(t.startswith('Update completed') for t in texts):
